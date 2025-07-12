@@ -5,6 +5,8 @@
 **/docker-compose.yml
 **/docker-compose.yaml
 
+PROJECT_PLAN.md
+
 venv/
 .venv/
 
