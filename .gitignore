@@ -1,0 +1,16 @@
+**/.env
+**/config.yml
+**/secrets.toml
+**/.secrets.toml
+**/docker-compose.yml
+**/docker-compose.yaml
+
+venv/
+.venv/
+
+.DS_Store/
+**/__pycache__/
+
+nui/
+nats/data/
+/nats/data/
