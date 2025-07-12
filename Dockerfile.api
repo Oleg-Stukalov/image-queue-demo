@@ -3,7 +3,7 @@ FROM python:3.12-slim-bullseye
 
 WORKDIR /app
 
-RUN pip install fastapi uvicorn python-multipart psycopg[binary] sqlalchemy alembic asyncpg
+RUN pip install fastapi uvicorn python-multipart psycopg[binary] psycopg2-binary sqlalchemy alembic asyncpg nats-py
 
 COPY . /app
 

@@ -7,5 +7,51 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - ./api:/app
+      - .:/app
+    depends_on:
+      - db
+      - nats
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://login:password@db:5432/dbname
+
+  db:
+    image: postgres:15
+    container_name: postgres-db
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: pass
+      POSTGRES_DB: dbname
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
     restart: unless-stopped
+
+  nats:
+    image: nats:latest
+    container_name: nats-server
+    entrypoint: /nats-server
+    command: "-c /config/server.conf"
+    ports:
+      - "4222:4222"
+      - "8222:8222"
+    volumes:
+    - ./nats/config:/config
+    - ./nats/data:/data
+    restart: unless-stopped
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    container_name: image-worker
+    volumes:
+      - ./uploads:/app/uploads
+      - ./processed:/app/processed
+    depends_on:
+      - db
+      - nats
+    restart: unless-stopped
+
+volumes:
+  pgdata:

@@ -4,6 +4,8 @@
 **/.secrets.toml
 **/docker-compose.yml
 **/docker-compose.yaml
+uploads/
+processed/
 
 PROJECT_PLAN.md
 
