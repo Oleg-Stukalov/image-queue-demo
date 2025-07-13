@@ -79,6 +79,33 @@ In a new terminal:
 docker-compose -f docker-compose.yml exec api alembic upgrade head
 ```
 
+## Database Migration (First Run)
+
+After starting the containers for the first time, you must initialize the database schema by running Alembic migrations. This step is required before the application can be used.
+
+### How to Run the Migration
+
+1. **Start the containers:**
+   ```bash
+   docker compose up -d
+   ```
+
+2. **Run the Alembic migration inside the API container:**
+   - Open a shell in the API container (use `sh` if `bash` is not available):
+     ```bash
+     docker exec -it fastapi-app sh
+     ```
+   - Then run:
+     ```bash
+     alembic upgrade head
+     ```
+   - Alternatively, you can run Alembic directly without opening a shell:
+     ```bash
+     docker exec -it fastapi-app alembic upgrade head
+     ```
+
+This will create all required tables in the database. You only need to do this the first time you set up a new database, or after resetting the database.
+
 ---
 
 ## API Endpoints
