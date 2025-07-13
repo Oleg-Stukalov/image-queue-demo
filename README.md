@@ -79,32 +79,25 @@ In a new terminal:
 docker-compose -f docker-compose.yml exec api alembic upgrade head
 ```
 
-## Database Migration (First Run)
+## Using the application
 
-After starting the containers for the first time, you must initialize the database schema by running Alembic migrations. This step is required before the application can be used.
+After you have started the containers and run the database migration, you can use the application as follows:
 
-### How to Run the Migration
+1. **Open the app in your browser:**
+   - Navigate to `http://<your-server-ip>:8000/` (replace `<your-server-ip>` with your actual server or VPS IP address).
 
-1. **Start the containers:**
-   ```bash
-   docker compose up -d
-   ```
+2. **Upload an image:**
+   - Use the upload form on the main page to upload an image file (for example, `test_image.JPG`).
 
-2. **Run the Alembic migration inside the API container:**
-   - Open a shell in the API container (use `sh` if `bash` is not available):
-     ```bash
-     docker exec -it fastapi-app sh
+3. **View the processed result:**
+   - After uploading, you will be redirected to the result page.
+   - You can also manually visit:
      ```
-   - Then run:
-     ```bash
-     alembic upgrade head
+     http://<your-server-ip>:8000/result/test_image.JPG
      ```
-   - Alternatively, you can run Alembic directly without opening a shell:
-     ```bash
-     docker exec -it fastapi-app alembic upgrade head
-     ```
+   - Replace `<your-server-ip>` with your server's IP address and `test_image.JPG` with the name of your uploaded file.
 
-This will create all required tables in the database. You only need to do this the first time you set up a new database, or after resetting the database.
+If the image was processed successfully, you should see the processed image displayed on the result page.
 
 ---
 
