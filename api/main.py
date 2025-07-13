@@ -1,7 +1,7 @@
 from fastapi import FastAPI, File, UploadFile, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 import os
-from config import NATS_URL
+from config import NATS_URL, UPLOADS_DIR, PROCESSED_DIR
 from nats.aio.client import Client as NATS
 from nats.js.api import StreamConfig
 import asyncio
@@ -15,8 +15,7 @@ from . import models  # if you use models in this file
 
 app = FastAPI()
 
-UPLOAD_FOLDER = "./uploads"
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+os.makedirs(UPLOADS_DIR, exist_ok=True)
 
 @app.get("/health")
 def health_check():
@@ -25,7 +24,7 @@ def health_check():
 @app.post("/upload")
 async def upload_image(file: UploadFile = File(...), session: AsyncSession = Depends(db.get_db)):
     # Save file locally as before
-    file_location = os.path.join(UPLOAD_FOLDER, file.filename)
+    file_location = os.path.join(UPLOADS_DIR, file.filename)
     with open(file_location, "wb") as f:
         content = await file.read()
         f.write(content)

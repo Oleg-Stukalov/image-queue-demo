@@ -1,7 +1,7 @@
 import os
 import sys
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
-from config import DATABASE_URL, NATS_URL
+from config import DATABASE_URL, NATS_URL, UPLOADS_DIR, PROCESSED_DIR
 import asyncio
 from nats.aio.client import Client as NATS
 from nats.js.api import DeliverPolicy
@@ -10,9 +10,6 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy import select, update
 from PIL import Image, ImageDraw, ImageFont
 from api.models import ImageTask
-
-UPLOADS_DIR = "/app/uploads"
-PROCESSED_DIR = "/app/processed"
 
 engine = create_async_engine(DATABASE_URL, echo=True)
 AsyncSessionLocal = sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)

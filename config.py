@@ -13,3 +13,5 @@ def load_secrets():
 secrets = load_secrets()
 DATABASE_URL = secrets["database"]["url"]
 NATS_URL = secrets["nats"]["url"]
+UPLOADS_DIR = secrets["paths"].get("uploads_dir", "/app/uploads")
+PROCESSED_DIR = secrets["paths"].get("processed_dir", "/app/processed")
