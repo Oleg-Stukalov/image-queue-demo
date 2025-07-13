@@ -1,8 +1,14 @@
 from fastapi import FastAPI, File, UploadFile, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 import os
+from config import NATS_URL
 from nats.aio.client import Client as NATS
+from nats.js.api import StreamConfig
 import asyncio
+try:
+    import tomllib
+except ImportError:
+    import tomli as tomllib
 
 from . import db
 from . import models  # if you use models in this file
@@ -30,10 +36,15 @@ async def upload_image(file: UploadFile = File(...), session: AsyncSession = Dep
     await session.commit()
     await session.refresh(task)
 
-    # Publish to NATS
+    # Publish to NATS JetStream
     nc = NATS()
-    await nc.connect("nats://nats:4222")
-    await nc.publish("image_tasks", str(task.id).encode())
+    await nc.connect(NATS_URL)
+    js = nc.jetstream()
+    try:
+        await js.add_stream(name="image_tasks", subjects=["image_tasks"])
+    except Exception:
+        pass  # Stream probably already exists
+    await js.publish("image_tasks", str(task.id).encode())
     await nc.drain()
 
     return {"task_id": task.id, "filename": task.filename, "message": "Upload successful"}

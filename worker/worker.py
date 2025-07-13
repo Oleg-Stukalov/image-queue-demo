@@ -1,15 +1,16 @@
+import os
+import sys
+sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+from config import DATABASE_URL, NATS_URL
 import asyncio
 from nats.aio.client import Client as NATS
+from nats.js.api import DeliverPolicy
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import select, update
 from PIL import Image, ImageDraw, ImageFont
-import os
-import sys
-sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 from api.models import ImageTask
 
-DATABASE_URL = "postgresql+asyncpg://postgres:postgres@db:5432/imagequeue"
 UPLOADS_DIR = "/app/uploads"
 PROCESSED_DIR = "/app/processed"
 
@@ -51,15 +52,31 @@ async def process_image(task_id):
 
 async def main():
     nc = NATS()
-    await nc.connect("nats://nats:4222")
+    await nc.connect(NATS_URL)
+    js = nc.jetstream()
+
+    # Ensure the stream exists (optional, safe to call if already exists)
+    try:
+        await js.add_stream(name="image_tasks", subjects=["image_tasks"])
+    except Exception:
+        pass  # Stream probably already exists
 
     async def message_handler(msg):
         task_id = int(msg.data.decode())
         print(f"Received task: {task_id}")
         await process_image(task_id)
+        await msg.ack()  # Acknowledge message
 
-    await nc.subscribe("image_tasks", cb=message_handler)
-    print("Worker listening for tasks...")
+    # Subscribe as a durable consumer
+    await js.subscribe(
+        "image_tasks",
+        durable="image_worker",
+        deliver_policy=DeliverPolicy.ALL,
+        cb=message_handler,        
+        manual_ack=True,
+    )
+
+    print("Worker is listening for JetStream tasks...")
     while True:
         await asyncio.sleep(1)
 

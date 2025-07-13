@@ -4,6 +4,7 @@ WORKDIR /app
 
 COPY api /app/api
 COPY worker/worker.py /app/worker.py
+COPY config.py /app/config.py
 
 RUN pip install nats-py pillow sqlalchemy asyncpg
 RUN apt-get update && apt-get install -y fonts-dejavu-core
