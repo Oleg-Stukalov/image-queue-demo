@@ -10,6 +10,10 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy import select, update
 from PIL import Image, ImageDraw, ImageFont
 from api.models import ImageTask
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 engine = create_async_engine(DATABASE_URL, echo=True)
 AsyncSessionLocal = sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
@@ -22,13 +26,11 @@ async def process_image(task_id):
         )
         task = result.scalar_one_or_none()
         if not task:
-            print(f"Task {task_id} not found")
+            logger.error(f"Task {task_id} not found")
             return
-
         filename = task.filename
         input_path = os.path.join(UPLOADS_DIR, filename)
         output_path = os.path.join(PROCESSED_DIR, filename)
-
         # Open and process image
         try:
             with Image.open(input_path) as im:
@@ -36,34 +38,32 @@ async def process_image(task_id):
                 font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", size=40)
                 draw.text((10, 10), "AI magic added!", fill="red", font=font)
                 im.save(output_path)
+            logger.info(f"Processed image and saved to {output_path}")
         except Exception as e:
-            print(f"Error processing image: {e}")
+            logger.error(f"Error processing image: {e}")
             return
-
         # Update status in DB
         await session.execute(
             update(ImageTask).where(ImageTask.id == task_id).values(status="done")
         )
         await session.commit()
-        print(f"Processed and updated task {task_id}")
+        logger.info(f"Updated task {task_id} status to done")
 
 async def main():
+    logger.info("Worker starting up and connecting to NATS JetStream...")
     nc = NATS()
     await nc.connect(NATS_URL)
     js = nc.jetstream()
-
     # Ensure the stream exists (optional, safe to call if already exists)
     try:
         await js.add_stream(name="image_tasks", subjects=["image_tasks"])
     except Exception:
         pass  # Stream probably already exists
-
     async def message_handler(msg):
         task_id = int(msg.data.decode())
-        print(f"Received task: {task_id}")
+        logger.info(f"Received task: {task_id}")
         await process_image(task_id)
         await msg.ack()  # Acknowledge message
-
     # Subscribe as a durable consumer
     await js.subscribe(
         "image_tasks",
@@ -72,8 +72,7 @@ async def main():
         cb=message_handler,        
         manual_ack=True,
     )
-
-    print("Worker is listening for JetStream tasks...")
+    logger.info("Worker is listening for JetStream tasks...")
     while True:
         await asyncio.sleep(1)
 

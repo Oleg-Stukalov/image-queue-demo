@@ -5,6 +5,7 @@ from config import NATS_URL, UPLOADS_DIR, PROCESSED_DIR
 from nats.aio.client import Client as NATS
 from nats.js.api import StreamConfig
 import asyncio
+import logging
 try:
     import tomllib
 except ImportError:
@@ -15,6 +16,9 @@ from . import models  # if you use models in this file
 
 app = FastAPI()
 
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 os.makedirs(UPLOADS_DIR, exist_ok=True)
 
 @app.get("/health")
@@ -23,18 +27,19 @@ def health_check():
 
 @app.post("/upload")
 async def upload_image(file: UploadFile = File(...), session: AsyncSession = Depends(db.get_db)):
+    logger.info(f"Received upload: {file.filename}")
     # Save file locally as before
     file_location = os.path.join(UPLOADS_DIR, file.filename)
     with open(file_location, "wb") as f:
         content = await file.read()
         f.write(content)
-
+    logger.info(f"Saved file to {file_location}")
     # Save task in DB
     task = models.ImageTask(filename=file.filename, status=models.TaskStatus.pending)
     session.add(task)
     await session.commit()
     await session.refresh(task)
-
+    logger.info(f"Created DB task with id {task.id}")
     # Publish to NATS JetStream
     nc = NATS()
     await nc.connect(NATS_URL)
@@ -45,7 +50,7 @@ async def upload_image(file: UploadFile = File(...), session: AsyncSession = Dep
         pass  # Stream probably already exists
     await js.publish("image_tasks", str(task.id).encode())
     await nc.drain()
-
+    logger.info(f"Published task {task.id} to NATS JetStream")
     return {"task_id": task.id, "filename": task.filename, "message": "Upload successful"}
 
 @app.get("/status/{task_id}")

@@ -8,11 +8,12 @@ services:
       - "8000:8000"
     volumes:
       - .:/app
+        - ./.secrets.toml:/app/.secrets.toml:ro
     depends_on:
       - db
       - nats
     environment:
-      - DATABASE_URL=postgresql+asyncpg://login:password@db:5432/dbname
+      - RUNNING_IN_DOCKER=true
 
   db:
     image: postgres:15
